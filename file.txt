@@ -1,0 +1,108 @@
+import java.util.Scanner;
+import java.lang.Math;
+
+public class Main {
+    static final int kMax = 1000; // Максимальное количество спичек
+    static final int MaxHash = 50000; // Максимальное значение хэша
+
+    static int[] startX = new int[kMax];
+    static int[] startY = new int[kMax];
+    static int[] endX = new int[kMax];
+    static int[] endY = new int[kMax];
+
+    static int[] matchStartX = new int[kMax];
+    static int[] matchStartY = new int[kMax];
+    static int[] matchEndX = new int[kMax];
+    static int[] matchEndY = new int[kMax];
+
+    static int[] deltaX = new int[kMax * kMax];
+    static int[] deltaY = new int[kMax * kMax];
+    static int[] nextIndex = new int[kMax * kMax];
+    static int[] matchCount = new int[kMax * kMax];
+    static int[] hashTable = new int[MaxHash];
+    static int currentSize = 0;
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int maximumMatches, shapesCount, i, j, currentIndex, diffX, diffY, hashValue;
+        shapesCount = sc.nextInt(); // Чтение количества спичек
+
+        // Чтение координат спичек для изображения A
+        for (i = 0; i < shapesCount; i++) {
+            startX[i] = sc.nextInt();
+            startY[i] = sc.nextInt();
+            endX[i] = sc.nextInt();
+            endY[i] = sc.nextInt();
+            if (startX[i] > endX[i] || ((startX[i] == endX[i]) && (startY[i] > endY[i]))) {
+                int tmp = startX[i];
+                startX[i] = endX[i];
+                endX[i] = tmp;
+                tmp = startY[i];
+                startY[i] = endY[i];
+                endY[i] = tmp;
+            }
+        }
+
+        // Чтение координат спичек для изображения B
+        for (i = 0; i < shapesCount; i++) {
+            matchStartX[i] = sc.nextInt();
+            matchStartY[i] = sc.nextInt();
+            matchEndX[i] = sc.nextInt();
+            matchEndY[i] = sc.nextInt();
+            if (matchStartX[i] > matchEndX[i] || ((matchStartX[i] == matchEndX[i]) && (matchStartY[i] > matchEndY[i]))) {
+                int tmp = matchStartX[i];
+                matchStartX[i] = matchEndX[i];
+                matchEndX[i] = tmp;
+                tmp = matchStartY[i];
+                matchStartY[i] = matchEndY[i];
+                matchEndY[i] = tmp;
+            }
+        }
+
+        for (int k = 0; k < MaxHash; k++) {
+            hashTable[k] = -1; // Инициализация хэш-таблицы
+        }
+
+        maximumMatches = 0;
+        // Поиск соответствий между спичками изображений A и B
+        for (i = 0; i < shapesCount; i++) {
+            for (j = 0; j < shapesCount; j++) {
+                diffX = matchStartX[j] - startX[i];
+                diffY = matchStartY[j] - startY[i];
+                if (endX[i] + diffX != matchEndX[j] || endY[i] + diffY != matchEndY[j]) {
+                    continue;
+                }
+
+                hashValue = (diffX << 16) ^ diffY; // Получение хэша для текущего сдвига
+                hashValue = Math.abs(hashValue) % MaxHash; // Исключение отрицательных значений
+
+                currentIndex = hashTable[hashValue];
+
+                // Проверка совпадений и обновление счетчика
+                while (currentIndex != -1) {
+                    if (deltaX[currentIndex] == diffX && deltaY[currentIndex] == diffY) {
+                        matchCount[currentIndex]++;
+                        maximumMatches = Math.max(maximumMatches, matchCount[currentIndex]);
+                        break;
+                    }
+                    currentIndex = nextIndex[currentIndex];
+                }
+
+                // Добавление нового совпадения
+                if (currentIndex == -1) {
+                    deltaX[currentSize] = diffX;
+                    deltaY[currentSize] = diffY;
+                    matchCount[currentSize] = 1;
+                    maximumMatches = Math.max(maximumMatches, 1);
+                    nextIndex[currentSize] = hashTable[hashValue];
+                    hashTable[hashValue] = currentSize;
+                    currentSize++;
+                }
+            }
+        }
+
+        System.out.println(shapesCount - maximumMatches); // Вывод минимального количества спичек, которые нужно переложить
+
+        sc.close();
+    }
+}
